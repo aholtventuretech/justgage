@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) Interactive Information R & D (I2RD) LLC.
+ * All Rights Reserved.
+ *
+ * This software is confidential and proprietary information of
+ * I2RD LLC ("Confidential Information"). You shall not disclose
+ * such Confidential Information and shall use it only in
+ * accordance with the terms of the license agreement you entered
+ * into with I2RD.
+ */
+
 /**
  * JustGage - animated gauges using RaphaelJS
  * Check http://www.justgage.com for official releases
@@ -193,6 +204,10 @@ JustGage = function(config) {
     // hide value text
     hideValue: kvLookup('hideValue', config, dataset, false),
 
+    // displayValue : string
+    // the value to display instead of the gauge value
+    displayValue: kvLookup('displayValue', config, dataset, undefined),
+
     // hideMinMax : bool
     // hide min and max values
     hideMinMax: kvLookup('hideMinMax', config, dataset, false),
@@ -228,6 +243,10 @@ JustGage = function(config) {
     // customSectors : [] of objects
     // number of digits after floating point
     customSectors: kvLookup('customSectors', config, dataset, []),
+
+    // displayCustomSectorBoundaries: true || false
+    // boolean flag -- if true will display boundary values for custom sectors.
+    displayCustomSectorBoundaries: kvLookup('displayCustomSectorBoundaries', config, dataset, true),
 
     // formatNumber: boolean
     // formats numbers with commas where appropriate
@@ -638,16 +657,19 @@ JustGage = function(config) {
   var sectors = Array();
   obj.config.customSectors.forEach(function(elem,index,arr){
         var s = "sector"+index;
-        var sws = (obj.config.value >= elem.lo && obj.config.value <= elem.hi) ? obj.config.gaugeWidthScale : obj.config.gaugeWidthScale2; //sector width
+        var sws = (obj.config.value >= elem.lo && obj.config.value <= elem.hi)
+            ? obj.config.gaugeWidthScale
+            : obj.config.gaugeWidthScale2; //sector width
         var mx = obj.config.max;
         var mn = obj.config.min;
         var lo = elem.lo;
-        var hi = elem.hi
+        var hi = elem.hi;
         if (obj.config.reverse){
             lo = mx + mn - elem.hi;
             hi = mx + mn - elem.lo;
         }
         sectors.push(s);
+    //obj.canvas.customAttributes.pki = function(lo,value, min, max, w, h, dx, dy, gws, donut, reverse) {
         obj[s] = obj.canvas.path().attr({
             "stroke": "none",
             "fill": elem.color,
@@ -782,7 +804,7 @@ var minMaxAttrs = {
     "font-family": "Arial",
     "fill": obj.config.labelFontColor,
     "fill-opacity": (obj.config.hideMinMax || obj.config.donut) ? "0" : "1"
-}
+};
   obj.txtMinimum = getFormattedNum(min,obj);
   obj.txtMin = obj.canvas.text(obj.params.minX, obj.params.minY, obj.txtMinimum);
   obj.txtMin.attr(minMaxAttrs);
@@ -826,9 +848,11 @@ obj.config.customSectors.forEach(function(elem, index, arr){
         Yli = h - (h - Cy) - Ri * Math.sin(theta);
         //Xc = (val >=lo && val <= hi) ? Xlo : Xli;
         //Yc = (val >=lo && val <= hi) ? Ylo : Yli;
-       obj[name] = obj.canvas.text(Xli, Yli, lo);
-       obj[name].attr(minMaxAttrs);
-       setDy(obj[name],obj.params.maxFontSize, Yli+5);
+       if(obj.config.displayCustomSectorBoundaries) {
+         obj[name] = obj.canvas.text(Xli, Yli, lo);
+         obj[name].attr(minMaxAttrs);
+         setDy(obj[name], obj.params.maxFontSize, Yli + 5);
+       }
     }
     lo,hi,mx,mn,val,gws,dx,dy,name,w,h = null;
 });
@@ -862,7 +886,7 @@ obj.config.customSectors.forEach(function(elem, index, arr){
 
 
       obj.txtValue.attr({
-        "text": obj.originalValue
+        "text": (config.displayValue || obj.originalValue)
       });
       setDy(obj.txtValue, obj.params.valueFontSize, obj.params.valueY);
 
@@ -967,7 +991,7 @@ JustGage.prototype.refresh = function(val, max) {
 
   if (!obj.config.counter) {
     obj.txtValue.attr({
-      "text": displayVal
+      "text": (config.displayValue || displayVal)
     });
     setDy(obj.txtValue, obj.params.valueFontSize, obj.params.valueY);
   }
